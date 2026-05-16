@@ -31,27 +31,57 @@ static GFont s_font_small;
 
 // ── Audio ─────────────────────────────────────────────────────────────────────
 
+static uint8_t *s_audio_buf = NULL;
+static SpeakerSample s_sample;
+static SpeakerNote s_note;
+static SpeakerTrack s_track;
+
+static void speaker_done_cb(SpeakerFinishReason reason, void *ctx) {
+    free(s_audio_buf);
+    s_audio_buf = NULL;
+}
+
 static void play_sound(int btn) {
     if (speaker_get_status() != SpeakerStatusIdle) {
         speaker_stop();
     }
-    ResHandle h = resource_get_handle(s_resource_ids[btn]);
-    size_t size = resource_size(h);
-    uint8_t *buf = malloc(size);
-    if (!buf) return;
-    resource_load(h, buf, size);
-    if (speaker_stream_open(SpeakerPcmFormat_8kHz_8bit, 85)) {
-        const uint8_t *ptr = buf;
-        size_t remaining = size;
-        while (remaining > 0) {
-            uint32_t w = speaker_stream_write(ptr, remaining);
-            if (w == 0) break;
-            ptr += w;
-            remaining -= w;
-        }
-        speaker_stream_close();
+    if (s_audio_buf) {
+        free(s_audio_buf);
+        s_audio_buf = NULL;
     }
-    free(buf);
+
+    ResHandle h = resource_get_handle(s_resource_ids[btn]);
+    uint32_t size = resource_size(h);
+
+    s_audio_buf = malloc(size);
+    if (!s_audio_buf) return;
+
+    resource_load(h, s_audio_buf, size);
+
+    uint32_t dur_ms = (size * 1000) / 8000 + 300;
+    if (dur_ms > 10000) dur_ms = 10000;
+
+    s_sample = (SpeakerSample){
+        .data = s_audio_buf,
+        .num_bytes = size,
+        .format = SpeakerPcmFormat_8kHz_8bit,
+        .base_midi_note = 60,
+        .loop = false
+    };
+    s_note = (SpeakerNote){
+        .midi_note = 60,
+        .waveform = SpeakerWaveformSine,
+        .duration_ms = dur_ms,
+        .velocity = 0
+    };
+    s_track = (SpeakerTrack){
+        .notes = &s_note,
+        .num_notes = 1,
+        .sample = &s_sample
+    };
+
+    speaker_set_finish_callback(speaker_done_cb, NULL);
+    speaker_play_tracks(&s_track, 1, 90);
 }
 
 // ── Flash timer ───────────────────────────────────────────────────────────────
@@ -168,14 +198,6 @@ static void canvas_update_proc(Layer *layer, GContext *ctx) {
     graphics_draw_line(ctx, GPoint(0, bh), GPoint(bounds.size.w, bh));
 }
 
-// ── Click config (suppress back button to prevent accidental exit) ────────────
-
-static void back_click_handler(ClickRecognizerRef recognizer, void *context) {}
-
-static void click_config_provider(void *context) {
-    window_single_click_subscribe(BUTTON_ID_BACK, back_click_handler);
-}
-
 // ── Window ────────────────────────────────────────────────────────────────────
 
 static void window_load(Window *window) {
@@ -190,7 +212,6 @@ static void window_load(Window *window) {
     s_font_small = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
 
     touch_service_subscribe(touch_handler, NULL);
-    window_set_click_config_provider(window, click_config_provider);
 }
 
 static void window_unload(Window *window) {

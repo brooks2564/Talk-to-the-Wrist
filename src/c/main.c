@@ -1,9 +1,12 @@
 #include <pebble.h>
 
+#define PERSIST_KEY_VOLUME 1
+
 static Window *s_window;
 static Layer *s_canvas;
 static int s_pressed = -1;
 static AppTimer *s_flash_timer = NULL;
+static uint8_t s_volume = 80;
 
 static const uint32_t s_resource_ids[] = {
     RESOURCE_ID_PCM_DATA_YES,
@@ -81,7 +84,22 @@ static void play_sound(int btn) {
     };
 
     speaker_set_finish_callback(speaker_done_cb, NULL);
-    speaker_play_tracks(&s_track, 1, 90);
+    speaker_play_tracks(&s_track, 1, s_volume);
+}
+
+// ── Settings (AppMessage from Clay) ──────────────────────────────────────────
+
+static const uint8_t VOLUME_MAP[] = { 0, 20, 40, 60, 80, 100 };
+
+static void inbox_received_cb(DictionaryIterator *iter, void *context) {
+    Tuple *t = dict_find(iter, MESSAGE_KEY_VOLUME_LEVEL);
+    if (t) {
+        int level = atoi(t->value->cstring);
+        if (level >= 1 && level <= 5) {
+            s_volume = VOLUME_MAP[level];
+            persist_write_int(PERSIST_KEY_VOLUME, s_volume);
+        }
+    }
 }
 
 // ── Flash timer ───────────────────────────────────────────────────────────────
@@ -224,6 +242,13 @@ static void window_unload(Window *window) {
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 static void init(void) {
+    if (persist_exists(PERSIST_KEY_VOLUME)) {
+        s_volume = (uint8_t)persist_read_int(PERSIST_KEY_VOLUME);
+    }
+
+    app_message_register_inbox_received(inbox_received_cb);
+    app_message_open(64, 0);
+
     s_window = window_create();
     window_set_window_handlers(s_window, (WindowHandlers){
         .load = window_load,

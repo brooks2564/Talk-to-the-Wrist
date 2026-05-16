@@ -1,0 +1,56 @@
+{
+    "displayName": "Talk to the Wrist",
+    "uuid": "c600a437-11cb-4717-9284-5e5d8bfb5b38",
+    "sdkVersion": "3",
+    "enableMultiJS": true,
+    "targetPlatforms": [
+        "emery"
+    ],
+    "watchapp": {
+        "watchface": false
+    },
+    "capabilities": [
+        "configurable"
+    ],
+    "messageKeys": {
+        "VOLUME_LEVEL": 10000
+    },
+    "resources": {
+        "media": [
+            {
+                "type": "raw",
+                "name": "PCM_DATA_YES",
+                "file": "yes.raw"
+            },
+            {
+                "type": "raw",
+                "name": "PCM_DATA_NO",
+                "file": "no.raw"
+            },
+            {
+                "type": "raw",
+                "name": "PCM_DATA_SHUTUP",
+                "file": "shutup.raw"
+            },
+            {
+                "type": "raw",
+                "name": "PCM_DATA_GETOUTTAHERE",
+                "file": "getouttahere.raw"
+            },
+            {
+                "type": "bitmap",
+                "name": "MENU_ICON",
+                "file": "icon.png",
+                "menuIcon": true
+            }
+        ]
+    },
+    "name": "talk-to-the-wrist",
+    "shortName": "Talk to the Wrist",
+    "longName": "Talk to the Wrist",
+    "versionLabel": "1.0.0",
+    "companyName": "Brooman Inks",
+    "appKeys": {
+        "VOLUME_LEVEL": 10000
+    }
+}

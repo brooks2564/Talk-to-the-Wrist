@@ -168,6 +168,14 @@ static void canvas_update_proc(Layer *layer, GContext *ctx) {
     graphics_draw_line(ctx, GPoint(0, bh), GPoint(bounds.size.w, bh));
 }
 
+// ── Click config (suppress back button to prevent accidental exit) ────────────
+
+static void back_click_handler(ClickRecognizerRef recognizer, void *context) {}
+
+static void click_config_provider(void *context) {
+    window_single_click_subscribe(BUTTON_ID_BACK, back_click_handler);
+}
+
 // ── Window ────────────────────────────────────────────────────────────────────
 
 static void window_load(Window *window) {
@@ -182,6 +190,7 @@ static void window_load(Window *window) {
     s_font_small = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
 
     touch_service_subscribe(touch_handler, NULL);
+    window_set_click_config_provider(window, click_config_provider);
 }
 
 static void window_unload(Window *window) {
